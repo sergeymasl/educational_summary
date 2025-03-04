@@ -117,5 +117,7 @@ hello_world_func("funny")
 #hello_funny_world
 #second_decorator_func
 ```
+## Возврат значений из декорируемой функции
+> любая функция в python всегда возвращяет значение. Даже если в функции нет явной инструкции `return`, она вернет `None`
 
-
+![alt text](./pictures/function_result.png)
