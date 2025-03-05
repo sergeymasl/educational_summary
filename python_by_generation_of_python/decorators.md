@@ -1,8 +1,10 @@
 # Декораторы
+
 **Декоратор** - это функция, которая принимает другую функцию, расширяет ее возможности не меняя при этом исходный код и возвращяет новую функцию.
 То есть обертывает другую функцию внутрь себя.
 
 Пример:
+
 ```python
 def simple_decorator(primary_func):
     def wrapper():
@@ -25,11 +27,15 @@ decorator_example()
 # hello_world
 # decorator activity 2
 ```
+
 ## Спец синтаксис для декораторов
+
 Вместо написания нескольких функций python позволяет использовать декораторы через специальный символ `@`, что является синтаксическим сахаром
 
 Теперь приведенный выше код можно переписать вот так
+
 ```python
+
 def simple_decorator(primary_func):
     def wrapper():
         print("decorator activity 1")
@@ -62,9 +68,11 @@ def uppercase_decorator(func):
 ```
 
 ## Применение нескольких декораторов
+
 При использовании нескольких декораторов их эффект накапливается.
 Декораторы применяются в порядке **снизу вверх**.
 Например:
+
 ```python
 def bold(func):
     def wrapper():
@@ -89,6 +97,7 @@ print(greet())
 ```
 
 ## Декорируемые функции с аргументами
+
 При использовании декораторов, мы передаем параметры не в конечную функцию, а в функцию обертку (`wrapper`)  
 Например:
 ![alt text](./pictures/decorator_with_parametrs.png)
@@ -97,6 +106,7 @@ print(greet())
 
 Для переиспользования параметров в декораторе необходимо использовать `*args` (arguments) и `**kwargs` (keywords arguments) **в функции обертке**  
 Например:
+
 ```python
 def sample_decorator(primary_func):
     def wrapper(*args, **kwargs):
@@ -117,7 +127,55 @@ hello_world_func("funny")
 #hello_funny_world
 #second_decorator_func
 ```
+
 ## Возврат значений из декорируемой функции
+
 > любая функция в python всегда возвращяет значение. Даже если в функции нет явной инструкции `return`, она вернет `None`
 
 ![alt text](./pictures/function_result.png)
+
+## Сохранение атрибутов \__name\__ и \__doc\__ для декорируемой функции
+
+> Каждая функция имеет спекиальные атрибуты `__name__` и `__doc__`
+
+- `__name__` - имя функции, имя для функции `def read()` является **read**
+- `__doc__` - строка документации, которая распологается сразу после объявления функции
+
+Например:
+
+```python
+def greet(name):
+    """Функция приветствия пользователя."""
+    return f"Hello {name}!"
+
+
+print(greet.__name__) # greet
+print(greet.__doc__) # Функция приветствия пользователя.
+
+```
+
+Но при использовании декоратора атрибуты name и doc вызываются из функции обертки, а не из декорирумой функции
+![alt text](./pictures/func_params.png)
+
+Вариант решения данной проблемы:
+
+```python
+def bold(func):
+    def wrapper(*args, **kwargs):
+        return '<b>' + func(*args, **kwargs) + '</b>'
+    wrapper.__name__ = func.__name__
+    wrapper.__doc__ = func.__doc__
+    return wrapper
+```
+
+Но как правило этот подход не используют, а используют декоратр `wraps` из модуля `functools` внутри своего декоратора, например:
+
+```python
+import functools
+
+def bold(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return '<b>' + func(*args, **kwargs) + '</b>'
+    return wrapper
+```
