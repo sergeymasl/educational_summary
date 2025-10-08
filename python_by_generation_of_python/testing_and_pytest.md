@@ -97,7 +97,7 @@ class TestOfAdding:
         assert add(3, -5) == -2
 ```
 
-![alt text](pytest_class.png)
+![](./pictures/pytest_class.png)
 
 ### Фикстуры
 
@@ -125,7 +125,7 @@ def test_len(list_example):
 - Можно передавать несколько фикстур в одну тестовую функию
 - Для того чтобы вывести print-ы прописанные внутри фикстур нужно указать флаг `-s` при запуске pystest `pytest -s`
 
-**Scope**.
+**Scope**.  
 Scope - параметр фикстуры, указывающий на то для какой "области" должна запускаться фикстура.
 `@pytest.fixture(scope="session")`
 
@@ -148,3 +148,49 @@ Scope - параметр фикстуры, указывающий на то дл
 Для создания **setup** и **teardown** вместо `return` используется `yield`. Все что до `yield` это **setup**, после **teardown**.
 
 ![alt text](./pictures/setup_teardown.png)
+
+## Общие фикстуры (confest.py)
+
+Если есть фикстуры которые переиспользуются в нескольких файлах, то можно определить их в файле `conftest.py`. Питон автоматически обнаружит этот файл.
+
+- файл находиться либо в той же директории что и тесты
+- фикстуры, определенные в conftest.py, становятся доступными для всех тестов в этой директории и ее поддиректориях без необходимости их импортировать. Но их все еще нужно прописывать в функции тестирования
+
+**Например**:  
+Содержание файла `conftest.py`:
+
+```py
+import pytest
+
+@pytest.fixture(scope="function")
+def tom_and_jerry():
+    return ["том", "джери"]
+```
+
+Файл непосредственно с тестами.
+
+```py
+def test_is_tom(tom_and_jerry):
+    assert "том" in tom_and_jerry
+```
+
+**Автоматическое применение фикстур:**
+
+Иногда нужно применить фикстуру по умолчанию, тогда можно использовать параметр фикстуры `autouse=True`
+
+Тогда фикстура будет приминяться автоматически, даже если тест ее не запрашивает
+
+Например:
+
+```py
+# conftest.py
+import pytest
+
+@pytest.fixture(autouse=True, scope="function")
+def track_test_duration():
+    import time
+    start_time = time.time()
+    yield
+    duration = time.time() - start_time
+    print(f"(Тест выполнялся: {duration:.4f} сек.)")
+```
