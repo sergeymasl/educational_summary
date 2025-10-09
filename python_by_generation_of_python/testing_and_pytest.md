@@ -194,3 +194,56 @@ def track_test_duration():
     duration = time.time() - start_time
     print(f"(Тест выполнялся: {duration:.4f} сек.)")
 ```
+
+### Параметризация тестов
+
+Параметризция - это запуск одного и того же теста но с несколькими параметрами. Этим можно избежать создание одинаковых тестов с разными входными данными
+
+Для параметризации используется декоратор `@pytest.mark.parametrize`
+
+```py
+@pytest.mark.parametrize(argnames, argvalues)
+def test_function(argnames):
+    # сам тест
+```
+
+`argnames` - это название параметра или список с названиями параметров которые будут использоваться в тесте
+
+`argvalues` - список с значениями (если параметр один) или список с кортежами в которых лежат значения (если параметров несколько)
+
+```py
+# пример с одним параметром
+@pytest.mark.parametrize("number", [1, 2, 3, 4, 5])
+def test_is_positive(number):
+    assert number > 0
+```
+
+```py
+# пример с несколькими параметрами
+
+@pytest.mark.parametrize("a, b, expected_sum", [
+    (1, 2, 3),
+    (5, 5, 10),
+    (-1, 1, 0),
+    (0, 0, 0),
+])
+def test_addition(a, b, expected_sum):
+    assert a + b == expected_sum
+```
+
+Также в итераторе есть параметр `ids` который маркирует каждый из параметров для того чтобы было понятнее какой из кейсов был проверен.
+
+Например:
+
+```py
+mport pytest
+
+@pytest.mark.parametrize("username, password", [
+    ("user1", "pass1"),
+    ("user2", "pass2"),
+    ("admin", "adminpass"),
+], ids=["User One", "User Two", "Administrator"])
+def test_login(username, password):
+    # Тест логина с заданными учетными данными
+    pass
+```
