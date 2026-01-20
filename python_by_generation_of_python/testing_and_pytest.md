@@ -236,7 +236,7 @@ def test_addition(a, b, expected_sum):
 Например:
 
 ```py
-mport pytest
+import pytest
 
 @pytest.mark.parametrize("username, password", [
     ("user1", "pass1"),
@@ -246,4 +246,39 @@ mport pytest
 def test_login(username, password):
     # Тест логина с заданными учетными данными
     pass
+```
+
+## Мокирование
+
+Мокирование - это **использование вместо реальных** подключений к базам данным, rest запросам к реальным api или внешних библиотек некую **заглушку**, позволяющую изолировать ваш код от внешнего взаимодействия.
+Прямое использование этих зависимостей в юнит-тестах нежелательно, потому что:
+
+Цель юнит-тестирования — **проверить логику вашего кода в изоляции**.
+
+Прямое использование внешних зависимостей в юнит-тестах нежелательно, потому что:
+
+- Медленно: Сетевые запросы или операции с БД могут быть долгими.
+- Ненадежно: Внешний сервис может быть недоступен, или данные в БД могут измениться.
+- Сложно контролировать: Трудно имитировать специфические ответы или состояния ошибок от внешних систем.
+- Побочные эффекты: Тесты могут изменять реальные данные (например, создавать записи в БД или отправлять настоящие email).
+  
+`Python` предоставляет мощную стандартную библиотеку `unittest.mock` для создания моков, заглушек и других тестовых двойников. Она прекрасно интегрируется с `pytest`
+
+Пример использования мока:
+
+```py
+from unittest.mock import Mock
+@pytest.fixture(scope="session")
+def spark():
+    yield SparkSession.builder.appName("local_test").getOrCreate()
+
+# внутри udf_calendar используется фикстура т.к. lit зависист от создания spark session
+@pytest.fixture(scope="session")
+def udf_calendar(spark):
+    udf_calendar = Mock()
+    udf_calendar.get_year_by_date_udf.return_value = lit(2026)
+    udf_calendar.get_period_by_date_udf.return_value = lit(1)
+    udf_calendar.get_week_by_date_udf.return_value = lit(1)
+
+    yield udf_calendar
 ```
