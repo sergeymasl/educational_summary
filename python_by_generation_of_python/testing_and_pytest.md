@@ -253,7 +253,7 @@ def test_login(username, password):
 Мокирование - это **использование вместо реальных** подключений к базам данным, rest запросам к реальным api или внешних библиотек некую **заглушку**, позволяющую изолировать ваш код от внешнего взаимодействия.
 Прямое использование этих зависимостей в юнит-тестах нежелательно, потому что:
 
-Цель юнит-тестирования — **проверить логику вашего кода в изоляции**.
+Цель юнит-тестирования — **проверить логику вашего кода в изоляции**. Без привязки к внешним системам.
 
 Прямое использование внешних зависимостей в юнит-тестах нежелательно, потому что:
 
@@ -268,6 +268,8 @@ def test_login(username, password):
 
 ```py
 from unittest.mock import Mock
+
+# это не mock
 @pytest.fixture(scope="session")
 def spark():
     yield SparkSession.builder.appName("local_test").getOrCreate()
@@ -281,4 +283,76 @@ def udf_calendar(spark):
     udf_calendar.get_week_by_date_udf.return_value = lit(1)
 
     yield udf_calendar
+```
+
+Помимо каких то систем или библиотек вы также можете замокать импорты, например:
+
+Импорт внутри спарк джобы:
+
+```py
+# если у вас не установлена данная библиотека, ваш код будет падать здесь
+from com.company.calendar.udf_calendar_spark import UdfCalendar
+
+def main(
+    udf_calendar : UdfCalendar,
+):
+...
+...
+pass
+```
+
+Это можно решить вот так:
+
+```py
+
+def patch_modules(modules: List[str]):
+    mock = Mock()
+    for module in modules:
+        sys.modules[module] = mock
+
+# последовательное мокирование нужно т.к. python импортирует каждый из модулей
+patch_modules(
+    [
+        "com",
+        "com.mars",
+        "com.mars.calendar",
+        "com.mars.calendar.mars_calendar_spark",
+    ]
+)
+```
+
+## patch
+
+`patch` — это способ временно "подменить" какую-то часть кода на "заглушку" (мок) только во время теста, внутри тестируемого кода, на который вы не можете влиять при передаче аргументов.
+
+**`patch` подменяет ссылку внутри на _функцию_ _(или что-то еще)_ внутри какого-то модуля на mock**
+
+Например, при работче спарк джобы используется функция `pyspark.sql.input_file_name`, она вернет значение только при чтении источника из файла, однако при тестирования, как правило используются тестовый данные получаемые через `spark.createDataFrame`, и при таком раскладе функцию вернет пустую строчку. Однако это может быть препядствием:
+
+```py
+# здесь функция to_date упадет с ошибкой если input_file_name вернет пустую строчку
+to_date(
+        regexp_extract(input_file_name(), DMY_DOT_DATE_REGEX_PATTERN, 0),
+        "dd.MM.yyyy",
+    ).alias("AsOfDt"),
+```
+
+Как это можно **запатчить**:
+
+```py
+from unittest.mock import patch
+
+@pytest.fixture
+def patch_input_file_func():
+    # при патчинге нужно указать внутри какого модуля нужно подменить ссылку
+    with patch("common.datamarts.common.spark_job_name.input_file_name") as input_file_func_mock:
+        input_file_func_mock.return_value = lit("mocked_filename 01.01.2026.csv")
+        yield input_file_func_mock
+
+
+class TestSparkJobи:
+    def test_prepare_source_data(self, patch_input_file_func, spark):
+        ...
+        ...
+        pass
 ```
